@@ -1,7 +1,7 @@
 """
 main.py
 ───────
-Punto de entrada. Corre todos los ejercicios en secuencia.
+Corre todos los ejercicios de ejemplo en secuencia.
 """
 
 from ejercicios import (

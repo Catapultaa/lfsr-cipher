@@ -1,7 +1,7 @@
 """
 lfsr_core.py
 ────────────
-Lógica pura del cifrador LFSR. Sin prints, sin ejercicios.
+Lógica del cifrador LFSR.
 
 Clases:
     LFSR                      — registro de desplazamiento (Fibonacci)
@@ -38,7 +38,7 @@ class LFSR:
         x^4 + x^3 + 1  →  taps=[4, 3]   (el "+1" es siempre implícito)
 
     Período máximo:
-        2^n − 1, alcanzable solo con polinomios primitivos sobre GF(2).
+        2^n − 1, alcanzable solo con polinomios primitivos.
         Con cualquier otro polinomio el período es menor y la secuencia
         se vuelve predecible antes.
     """
