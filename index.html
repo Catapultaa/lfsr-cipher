@@ -248,86 +248,14 @@ tbody tr.active-row td:first-child{color:var(--rose)}
 </div><!-- /shell -->
 
 <script>
-// ─── Equivalente a lfsr_core.py ───────────────────────────────────────────
+// ─── Toda la lógica LFSR corre en Python (api.py / lfsr_core.py) ──────────
+// El JS solo mantiene el estado visual y llama a los endpoints REST.
 
-// LFSR.step() y LFSR.generate()
-// Convención: state[0]=MSB, state[n-1]=LSB (salida)
-// taps = exponentes del polinomio, 1-indexed desde MSB
-// tap i → posición (n - i) en el array
-function lfsrStep(s, taps) {
-  const n      = s.length;
-  const outBit = s[n - 1];                               // LSB = salida
-  const fb     = taps.reduce((acc, t) => {               // XOR de los taps
-    const pos = t - 1;                                   // tap t → índice t-1 (igual que Python: bit n-t del entero = s[t-1])
-    return acc ^ (pos >= 0 && pos < n ? s[pos] : 0);
-  }, 0);
-  return { newState: [fb, ...s.slice(0, n - 1)], outBit, fb };
-}
-
-// check_primitive(): corre el LFSR con semilla=1 y mide el período real
-function computePeriod(nBits, taps) {
-  const maxPeriod = (1 << nBits) - 1;
-  let state = Array(nBits).fill(0);
-  state[nBits - 1] = 1;                                  // semilla = 1 (LSB)
-  const initial = state.slice();
-  let count = 0;
-  do {
-    const { newState } = lfsrStep(state, taps);
-    state = newState;
-    count++;
-    if (count > maxPeriod + 1) break;
-  } while (state.join('') !== initial.join(''));
-  return count;
-}
-
-function checkPrimitive(nBits, taps) {
-  const maxPeriod = (1 << nBits) - 1;
-  const period    = computePeriod(nBits, taps);
-  return { isPrimitive: period === maxPeriod, period, maxPeriod };
-}
-
-// LFSRPseudorandomGenerator.generate_bytes()
-function genKeystream(seedArr, taps, nBytes) {
-  let state = [...seedArr];
-  const bytes = [];
-  for (let b = 0; b < nBytes; b++) {
-    let byteVal = 0;
-    for (let k = 0; k < 8; k++) {
-      const { newState, outBit } = lfsrStep(state, taps);
-      byteVal = (byteVal << 1) | outBit;
-      state   = newState;
-    }
-    bytes.push(byteVal);
-  }
-  return bytes;
-}
-
-// textToBits() — equivalente al encode() de Python
-function textToBits(str) {
-  const bits = [];
-  for (let i = 0; i < str.length; i++) {
-    const c = str.charCodeAt(i);
-    for (let k = 7; k >= 0; k--) bits.push((c >> k) & 1);
-  }
-  return bits;
-}
-
-// LFSRStreamCipher.encrypt() sin validación (la validación se hace por separado)
-function encryptBits(plainBits, seedArr, taps) {
-  const nBytes  = Math.ceil(plainBits.length / 8);
-  const ksBytes = genKeystream(seedArr, taps, nBytes);
-  // expandir bytes a bits y XOR
-  const ksBits = [];
-  for (const byte of ksBytes)
-    for (let k = 7; k >= 0; k--) ksBits.push((byte >> k) & 1);
-  return plainBits.map((b, i) => b ^ ksBits[i]);
-}
-
-// ─── Estado de la UI ─────────────────────────────────────────────────────────
+// ─── Estado de la UI ──────────────────────────────────────────────────────────
 
 let state = [], taps = [], keystream = [], stepN = 0;
-let playing = false, interval = null, lastOut = null, lastFB = null;
-let primitiveOk = false;
+let playing = false, stepping = false, interval = null;
+let lastOut = null, lastFB = null, primitiveOk = false;
 const SPEEDS = [700, 450, 270, 150, 60];
 
 const $ = id => document.getElementById(id);
@@ -340,16 +268,28 @@ function getTapsArr() {
     .map(s => parseInt(s.trim()))
     .filter(n => !isNaN(n) && n >= 1);
 }
-function getText()  { return $('plaintext').value || 'Hi'; }
-function getSpd()   { return SPEEDS[parseInt($('speed').value) - 1]; }
+function getText() { return $('plaintext').value || 'Hi'; }
+function getSpd()  { return SPEEDS[parseInt($('speed').value) - 1]; }
 
-// ─── Verificación de primitivo (check_primitive) ─────────────────────────────
+// ─── Helper fetch ─────────────────────────────────────────────────────────────
 
-function updatePrimitiveStatus() {
-  const seed = getSeedArr();
+async function api(path, body) {
+  const res = await fetch(path, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ─── Verificación de primitivo → POST /api/check-primitive ───────────────────
+
+async function updatePrimitiveStatus() {
+  const seed    = getSeedArr();
   const tapsArr = getTapsArr();
-  const box  = $('prim-status');
-  const msg  = $('prim-msg');
+  const box = $('prim-status');
+  const msg = $('prim-msg');
 
   if (!seed.length || !tapsArr.length || tapsArr.some(t => t > seed.length)) {
     box.className = 'prim-status idle';
@@ -360,20 +300,29 @@ function updatePrimitiveStatus() {
     return;
   }
 
-  const { isPrimitive, period, maxPeriod } = checkPrimitive(seed.length, tapsArr);
-  const poly = tapsArr.slice().sort((a,b)=>b-a).map(t=>`x^${t}`).join(' + ') + ' + 1';
-  primitiveOk = isPrimitive;
+  try {
+    const { is_primitive, period, max_period } = await api('/api/check-primitive', {
+      n_bits: seed.length,
+      taps:   tapsArr,
+    });
+    const poly = tapsArr.slice().sort((a,b)=>b-a).map(t=>`x^${t}`).join(' + ') + ' + 1';
+    primitiveOk = is_primitive;
 
-  if (isPrimitive) {
-    box.className = 'prim-status ok';
-    msg.innerHTML = `✔ <strong>${poly}</strong> es primitivo — período máximo: 2<sup>${seed.length}</sup>−1 = ${maxPeriod}`;
-  } else {
-    box.className = 'prim-status warn';
-    msg.innerHTML = `✘ <strong>${poly}</strong> NO es primitivo — período real: T = ${period} (máximo sería ${maxPeriod}). El keystream se repite y el cifrado es débil.`;
+    if (is_primitive) {
+      box.className = 'prim-status ok';
+      msg.innerHTML = `✔ <strong>${poly}</strong> es primitivo — período máximo: 2<sup>${seed.length}</sup>−1 = ${max_period}`;
+    } else {
+      box.className = 'prim-status warn';
+      msg.innerHTML = `✘ <strong>${poly}</strong> NO es primitivo — período real: T = ${period} (máximo sería ${max_period}). El keystream se repite y el cifrado es débil.`;
+    }
+    setControlsEnabled(is_primitive);
+    highlightTableRow(tapsArr);
+  } catch {
+    box.className = 'prim-status idle';
+    msg.textContent = 'Error al conectar con el servidor. ¿Está api.py corriendo?';
+    primitiveOk = false;
+    setControlsEnabled(false);
   }
-
-  setControlsEnabled(isPrimitive);
-  highlightTableRow(tapsArr);
 }
 
 function setControlsEnabled(enabled) {
@@ -387,16 +336,15 @@ function highlightTableRow(tapsArr) {
     if (tapsArr) {
       const rowTaps = tr.dataset.taps.split(',').map(Number);
       if (rowTaps.length === tapsArr.length &&
-          rowTaps.every((v, i) => v === tapsArr.slice().sort((a,b)=>b-a)[i])) {
+          rowTaps.every((v,i) => v === tapsArr.slice().sort((a,b)=>b-a)[i]))
         tr.classList.add('active-row');
-      }
     }
   });
 }
 
-// ─── Lógica de animación ─────────────────────────────────────────────────────
+// ─── Animación — POST /api/step ───────────────────────────────────────────────
 
-function resetAll() {
+async function resetAll() {
   stopPlay();
   state     = getSeedArr();
   taps      = getTapsArr();
@@ -405,44 +353,53 @@ function resetAll() {
   lastOut   = null;
   lastFB    = null;
   $('ks-track').innerHTML = '';
-  updatePrimitiveStatus();
+  await updatePrimitiveStatus();
   render();
+  await renderCipher();
 }
 
-function stepOnce() {
-  if (!primitiveOk || !state.length) return;
-  const { newState, outBit, fb } = lfsrStep(state, taps);
-  lastOut  = outBit;
-  lastFB   = fb;
-  keystream.push(outBit);
-  state  = newState;
-  stepN++;
-  render(true);
+async function stepOnce() {
+  if (!primitiveOk || !state.length || stepping) return;
+  stepping = true;
+  try {
+    const data = await api('/api/step', { state, taps });
+    lastOut = data.out_bit;
+    lastFB  = data.fb;
+    keystream.push(data.out_bit);
+    state = data.new_state;
+    stepN++;
+    render(true);
+  } catch (e) {
+    console.error('Error en /api/step:', e);
+  } finally {
+    stepping = false;
+  }
 }
 
 function togglePlay() {
   if (playing) { stopPlay(); return; }
   playing = true;
   $('btn-play').textContent = '⏸ Pausar';
-  interval = setInterval(() => {
-    stepOnce();
+  interval = setInterval(async () => {
+    if (stepping) return;
+    await stepOnce();
     if (stepN >= (1 << state.length) - 1) stopPlay();
   }, getSpd());
 }
+
 function stopPlay() {
   playing = false;
   clearInterval(interval);
   $('btn-play').textContent = '▶ Animar';
 }
 
-// ─── Render ──────────────────────────────────────────────────────────────────
+// ─── Render (registro y keystream son locales; cifrado viene de la API) ───────
 
 function render(flash = false) {
   renderRegister(flash);
   renderKeystream();
-  renderCipher();
   const label = 'paso ' + stepN;
-  $('counter').textContent  = label;
+  $('counter').textContent   = label;
   $('step-pill').textContent = label;
 }
 
@@ -452,11 +409,9 @@ function renderRegister(flash) {
   const n = state.length;
 
   // Layout: ⊕ → [x¹] → [x²] → … → [xⁿ] → salida
-  // state[0] = MSB = celda x¹ (nueva retroalimentación entra aquí, izquierda)
-  // state[n-1] = LSB = celda xⁿ (salida sale de aquí, derecha)
-  // tap t → arrIdx = t-1  (igual que Python: bit n-t del entero = s[t-1])
+  // state[0]=MSB=x¹ (retroalimentación entra izquierda)
+  // state[n-1]=LSB=xⁿ (salida sale derecha)
 
-  // ① Nodo XOR — izquierda del todo
   const xn = document.createElement('div');
   xn.className = 'xor-node' + (flash && lastFB !== null ? ' firing' : '');
   xn.textContent = '⊕';
@@ -466,20 +421,19 @@ function renderRegister(flash) {
   a0.className = 'arr-sym'; a0.textContent = '→';
   el.appendChild(a0);
 
-  // ② Celdas x¹ … xⁿ de izquierda a derecha
   for (let visual = 0; visual < n; visual++) {
-    const arrIdx = visual;        // s[0]=x¹ … s[n-1]=xⁿ
-    const exp    = visual + 1;    // exp: 1, 2, …, n
+    const arrIdx = visual;
+    const exp    = visual + 1;
 
     const cell  = document.createElement('div');
     const isTap = taps.includes(exp);
-    const isIn  = arrIdx === 0 && !isTap && stepN > 0;  // x¹ verde solo tras el primer paso
-    const isNew = isIn && flash;            // animación solo al entrar un bit nuevo
+    const isIn  = arrIdx === 0 && !isTap && stepN > 0;
+    const isNew = isIn && flash;
 
     cell.className = 'cell'
-      + (isTap  ? ' is-tap' : '')
-      + (isIn   ? ' is-in'  : '')
-      + (isNew  ? ' is-new' : '');
+      + (isTap ? ' is-tap' : '')
+      + (isIn  ? ' is-in'  : '')
+      + (isNew ? ' is-new' : '');
     cell.innerHTML = state[arrIdx] + '<span class="cell-idx">x<sup>' + exp + '</sup></span>';
     el.appendChild(cell);
 
@@ -490,7 +444,6 @@ function renderRegister(flash) {
     }
   }
 
-  // ③ Flecha y burbuja de salida — derecha del todo
   const aOut = document.createElement('span');
   aOut.className = 'arr-sym'; aOut.textContent = '→';
   el.appendChild(aOut);
@@ -522,61 +475,70 @@ function renderKeystream() {
     : '';
 }
 
-function renderCipher() {
+// ─── Cifrado → POST /api/encrypt ─────────────────────────────────────────────
+
+async function renderCipher() {
   if (!primitiveOk) {
     ['row-plain','row-ks','row-cipher','row-decoded'].forEach(id => $(id).innerHTML = '');
     return;
   }
-  const plain  = textToBits(getText());
-  const seed   = getSeedArr();
-  const ts     = getTapsArr();
-  const ciph   = encryptBits(plain, seed, ts);
-  const dec    = encryptBits(ciph, seed, ts);   // descifrar = volver a cifrar
-  // reconstruir keystream para mostrarlo
-  const ks = plain.map((b, i) => b ^ ciph[i]);
-  const MAX = 32;
-
-  function fill(id, bits, cls) {
-    const el = $(id); el.innerHTML = '';
-    bits.slice(0, MAX).forEach(b => {
-      const d = document.createElement('div');
-      d.className = 'bit ' + cls; d.textContent = b;
-      el.appendChild(d);
+  try {
+    const data = await api('/api/encrypt', {
+      plaintext: getText(),
+      seed:      getSeedArr(),
+      taps:      getTapsArr(),
     });
-    if (bits.length > MAX) {
-      const d = document.createElement('div');
-      d.className = 'bit ell'; d.textContent = '…';
-      el.appendChild(d);
+    const MAX = 32;
+    function fill(id, bits, cls) {
+      const el = $(id); el.innerHTML = '';
+      bits.slice(0, MAX).forEach(b => {
+        const d = document.createElement('div');
+        d.className = 'bit ' + cls; d.textContent = b;
+        el.appendChild(d);
+      });
+      if (bits.length > MAX) {
+        const d = document.createElement('div');
+        d.className = 'bit ell'; d.textContent = '…';
+        el.appendChild(d);
+      }
     }
+    fill('row-plain',   data.plain_bits,   'plain');
+    fill('row-ks',      data.keystream,     'key');
+    fill('row-cipher',  data.cipher_bits,   'ciph');
+    fill('row-decoded', data.decoded_bits,  'dec');
+  } catch (e) {
+    console.error('Error en /api/encrypt:', e);
   }
-  fill('row-plain',   plain, 'plain');
-  fill('row-ks',      ks,    'key');
-  fill('row-cipher',  ciph,  'ciph');
-  fill('row-decoded', dec,   'dec');
 }
 
-// ─── Eventos ─────────────────────────────────────────────────────────────────
+// ─── Eventos ──────────────────────────────────────────────────────────────────
 
-['seed', 'taps', 'plaintext'].forEach(id => $(id).addEventListener('input', resetAll));
+['seed', 'taps', 'plaintext'].forEach(id => $(id).addEventListener('input', () => resetAll()));
 $('speed').addEventListener('input', () => { if (playing) { stopPlay(); togglePlay(); } });
 
-// Clic en fila de la tabla → carga esos taps
 document.querySelectorAll('#poly-table tbody tr').forEach(tr => {
   tr.style.cursor = 'pointer';
   tr.addEventListener('click', () => {
     const n    = parseInt(tr.children[0].textContent);
     const tStr = tr.dataset.taps;
     $('taps').value = tStr;
-    // ajustar semilla al mismo n si es necesario
     const cur = getSeedArr();
-    if (cur.length !== n) {
-      $('seed').value = '1' + '0'.repeat(n - 1);
-    }
+    if (cur.length !== n) $('seed').value = '1' + '0'.repeat(n - 1);
     resetAll();
   });
 });
 
-resetAll();
+if (location.protocol === 'file:') {
+  const box = $('prim-status');
+  box.className = 'prim-status warn';
+  $('prim-msg').innerHTML =
+    '⚠ Abriste el archivo directamente. Para que funcione debes acceder a ' +
+    '<strong>http://localhost:8000</strong> después de correr ' +
+    '<code>uvicorn api:app --reload</code> en la carpeta del proyecto.';
+  setControlsEnabled(false);
+} else {
+  resetAll();
+}
 </script>
 </body>
 </html>
