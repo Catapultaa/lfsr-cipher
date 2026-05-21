@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LFSR Cipher — Visualizador</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400;500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -16,14 +16,14 @@
   --border:#bdb3a0;--border-dark:#928070;
   --serif:'Cormorant Garamond','Times New Roman',serif;
   --display:'IM Fell English','Times New Roman',serif;
-  --mono:'DM Mono','Courier New',monospace;
+  --mono:'Cormorant Garamond','Times New Roman',serif;
 }
 html{scroll-behavior:smooth}
 body{
   background:var(--cream2);
   color:var(--ink);
   font-family:var(--serif);
-  font-size:20px;
+  font-size:23px;
   line-height:1.75;
 }
 .shell{
@@ -44,7 +44,7 @@ header{
 }
 .eyebrow{
   font-family:var(--mono);
-  font-size:13px;
+  font-size:16px;
   font-weight:300;
   color:var(--muted);
   letter-spacing:.22em;
@@ -62,7 +62,7 @@ h1{
 h1 span{font-style:normal}
 h1 em{color:var(--rose)}
 .header-sub{
-  font-size:18px;
+  font-size:21px;
   color:var(--muted);
   font-style:italic;
   font-weight:300;
@@ -71,7 +71,7 @@ h1 em{color:var(--rose)}
 .step-pill{
   display:inline-block;
   font-family:var(--mono);
-  font-size:13px;
+  font-size:16px;
   background:var(--rose-bg);
   color:var(--rose);
   border:1px solid var(--rose-lt);
@@ -81,7 +81,7 @@ h1 em{color:var(--rose)}
 /* ── Etiquetas de sección ────────────────────────────────────────────────── */
 .slabel{
   font-family:var(--serif);
-  font-size:15px;
+  font-size:18px;
   font-variant:small-caps;
   letter-spacing:.1em;
   color:var(--ink2);
@@ -96,7 +96,7 @@ h1 em{color:var(--rose)}
   font-variant:normal;
   font-family:var(--display);
   font-style:italic;
-  font-size:18px;
+  font-size:22px;
   line-height:1;
 }
 
@@ -106,7 +106,7 @@ h1 em{color:var(--rose)}
 .field label{
   display:block;
   font-family:var(--mono);
-  font-size:13px;
+  font-size:16px;
   color:var(--muted);
   margin-bottom:5px;
   letter-spacing:.03em;
@@ -117,7 +117,7 @@ h1 em{color:var(--rose)}
   border:1px solid var(--border);
   padding:8px 10px;
   font-family:var(--mono);
-  font-size:16px;
+  font-size:19px;
   color:var(--ink);
   outline:none;
   transition:border-color .15s;
@@ -126,13 +126,13 @@ h1 em{color:var(--rose)}
 }
 .field input:focus{border-color:var(--rose)}
 .field input.invalid{border-color:var(--danger);background:var(--danger-bg)}
-.field-hint{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px}
+.field-hint{font-family:var(--serif);font-size:16px;color:var(--muted);margin-top:3px}
 
 /* ── Estado del polinomio ────────────────────────────────────────────────── */
 .prim-status{
   margin-bottom:2rem;
   font-family:var(--serif);
-  font-size:15px;
+  font-size:18px;
   padding:9px 12px;
   border:1px solid;
   display:flex;
@@ -143,7 +143,7 @@ h1 em{color:var(--rose)}
 .prim-status.ok  {background:#eaf4ec;border-color:#6aaa7e;color:#1a4a2a}
 .prim-status.warn{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger)}
 .prim-status.idle{background:var(--cream);border-color:var(--border);color:var(--muted)}
-.prim-icon{flex-shrink:0;font-size:16px}
+.prim-icon{flex-shrink:0;font-size:19px}
 
 /* ── Registro ────────────────────────────────────────────────────────────── */
 .reg-section{margin-bottom:2rem}
@@ -158,24 +158,24 @@ h1 em{color:var(--rose)}
   width:60px;height:60px;
   border:1px solid var(--border);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:22px;font-weight:400;
+  font-family:var(--mono);font-size:26px;font-weight:400;
   color:var(--ink2);background:var(--paper);
   position:relative;
   transition:background .25s,border-color .25s,color .25s;
   flex-shrink:0;
 }
-.cell-idx{position:absolute;bottom:4px;font-size:11px;color:var(--muted);font-family:var(--mono)}
-.cell-idx sup{font-size:9px}
+.cell-idx{position:absolute;bottom:4px;font-size:13px;color:var(--muted);font-family:var(--mono)}
+.cell-idx sup{font-size:11px}
 .cell.is-tap{border-color:var(--rose);background:var(--rose-bg);color:var(--rose)}
 .cell.is-in {background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
 .cell.is-in.is-new{animation:slidein .3s ease}
 @keyframes slidein{from{transform:translateY(-6px);opacity:.4}to{transform:translateY(0);opacity:1}}
-.arr-sym{font-family:var(--mono);font-size:15px;color:var(--border-dark);flex-shrink:0;user-select:none}
+.arr-sym{font-family:var(--mono);font-size:18px;color:var(--border-dark);flex-shrink:0;user-select:none}
 .xor-node{
   width:36px;height:36px;border-radius:50%;
   border:1px solid var(--rose-dim);background:var(--rose-bg);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:14px;color:var(--rose);
+  font-family:var(--mono);font-size:17px;color:var(--rose);
   flex-shrink:0;transition:background .2s;
 }
 .xor-node.firing{background:var(--rose);color:white;border-color:var(--rose)}
@@ -183,7 +183,7 @@ h1 em{color:var(--rose)}
   width:42px;height:42px;border-radius:50%;
   border:1px solid var(--border);background:var(--cream);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:17px;font-weight:400;
+  font-family:var(--mono);font-size:20px;font-weight:400;
   color:var(--muted);flex-shrink:0;transition:all .25s;
 }
 .out-node.one {background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
@@ -193,7 +193,7 @@ h1 em{color:var(--rose)}
   margin-top:.55rem;
 }
 .tap-note{
-  font-family:var(--mono);font-size:13px;
+  font-family:var(--serif);font-size:18px;
   color:var(--muted);font-style:italic;
 }
 .tap-note strong{color:var(--rose);font-style:normal}
@@ -206,10 +206,10 @@ h1 em{color:var(--rose)}
   background:var(--cream);border:1px solid var(--border);
 }
 .ks-bit{
-  width:30px;height:30px;
+  width:34px;height:34px;
   border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:14px;
+  font-family:var(--mono);font-size:17px;
   color:var(--muted);background:var(--paper);
   transition:all .2s;
 }
@@ -217,7 +217,7 @@ h1 em{color:var(--rose)}
 .ks-bit.k0{background:var(--cream2);color:var(--ink2)}
 .ks-bit.new{animation:pop .2s ease}
 @keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
-.period-note{margin-top:.4rem;font-family:var(--mono);font-size:13px;color:var(--muted);font-style:italic}
+.period-note{margin-top:.4rem;font-family:var(--mono);font-size:16px;color:var(--muted);font-style:italic}
 .period-note strong{color:var(--amber);font-style:normal}
 
 /* ── Cifrado ─────────────────────────────────────────────────────────────── */
@@ -228,13 +228,13 @@ h1 em{color:var(--rose)}
   background:var(--cream);border:1px solid var(--border);
 }
 .c-row{display:flex;align-items:center;gap:12px}
-.c-label{font-family:var(--mono);font-size:13px;color:var(--muted);min-width:96px;flex-shrink:0}
+.c-label{font-family:var(--serif);font-size:18px;color:var(--muted);min-width:108px;flex-shrink:0}
 .bits{display:flex;gap:3px;flex-wrap:wrap}
 .bit{
-  width:24px;height:24px;
+  width:27px;height:27px;
   border:1px solid transparent;
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:13px;
+  font-family:var(--mono);font-size:15px;
 }
 .bit.plain{background:#eae4d8;color:var(--ink2);border-color:var(--border)}
 .bit.key  {background:var(--rose-bg);color:var(--rose);border-color:var(--rose-lt)}
@@ -251,7 +251,7 @@ h1 em{color:var(--rose)}
   margin-bottom:2.5rem;
 }
 button{
-  font-family:var(--mono);font-size:14px;font-weight:400;
+  font-family:var(--mono);font-size:17px;font-weight:400;
   padding:7px 17px;
   border:1px solid var(--border-dark);
   background:var(--cream);color:var(--ink2);
@@ -265,7 +265,7 @@ button:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 .btn-rose{background:var(--rose);border-color:var(--rose);color:white}
 .btn-rose:hover{background:#982040;border-color:#982040;color:white}
 .speed-wrap{display:flex;align-items:center;gap:7px;margin-left:4px}
-.speed-wrap label{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.speed-wrap label{font-family:var(--mono);font-size:16px;color:var(--muted)}
 input[type=range]{accent-color:var(--rose);width:68px}
 .counter{margin-left:auto;font-family:var(--serif);font-size:17px;font-style:italic;color:var(--muted)}
 
@@ -277,9 +277,9 @@ input[type=range]{accent-color:var(--rose);width:68px}
   font-weight:600;font-variant:small-caps;
   color:var(--ink);margin-bottom:.2rem;letter-spacing:.04em;
 }
-.info-block p{font-size:16px;color:var(--ink2);font-weight:300;line-height:1.72}
+.info-block p{font-size:19px;color:var(--ink2);font-weight:300;line-height:1.72}
 .info-block code{
-  font-family:var(--mono);font-size:14px;
+  font-family:var(--mono);font-size:17px;
   background:var(--cream);border:1px solid var(--border);
   padding:1px 4px;color:var(--ink2);
 }
@@ -288,7 +288,7 @@ input[type=range]{accent-color:var(--rose);width:68px}
 .poly-wrap{overflow-x:auto}
 table{
   width:100%;border-collapse:collapse;
-  font-family:var(--mono);font-size:14px;
+  font-family:var(--mono);font-size:16px;
   border:1px solid var(--border-dark);
 }
 thead tr{background:var(--cream2)}
