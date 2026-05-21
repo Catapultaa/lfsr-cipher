@@ -4,153 +4,345 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LFSR Cipher — Visualizador</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400;500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --cream:#f5f0e8;--cream2:#ede8de;--paper:#faf8f3;
-  --ink:#1e1a14;--ink2:#3d3830;--muted:#8a8070;
-  --rose:#d4537e;--rose-lt:#f2c4d1;--rose-dim:#e8a0b8;--rose-bg:#fbe8ef;
-  --teal:#2a7c6e;--teal-lt:#c6e8e3;--amber:#c07a20;
-  --danger:#b03030;--danger-bg:#fdf0f0;--danger-border:#f0c0c0;
-  --border:#d9d2c5;
-  --serif:'Playfair Display',Georgia,serif;
+  --cream:#f0f0f0;--cream2:#e8e8e8;--paper:#ffffff;
+  --ink:#1a1610;--ink2:#1a1610;--muted:#1a1610;
+  --rose:#b0344c;--rose-lt:#e0aab8;--rose-dim:#cc8898;--rose-bg:#faeef2;
+  --teal:#256058;--teal-lt:#b0d4ce;--amber:#9e6818;
+  --danger:#902020;--danger-bg:#fdf0f0;--danger-border:#dca8a8;
+  --border:#bdb3a0;--border-dark:#928070;
+  --serif:'Cormorant Garamond','Times New Roman',serif;
+  --display:'IM Fell English','Times New Roman',serif;
   --mono:'DM Mono','Courier New',monospace;
-  --sans:'DM Sans',sans-serif;
 }
 html{scroll-behavior:smooth}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.65;min-height:100vh}
-.shell{max-width:860px;margin:0 auto;padding:3rem 2rem 5rem}
+body{
+  background:var(--cream2);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:20px;
+  line-height:1.75;
+}
+.shell{
+  max-width:820px;
+  margin:0 auto;
+  padding:0 3rem 5rem;
+  background:var(--paper);
+  border-left:1px solid var(--border);
+  border-right:1px solid var(--border);
+  min-height:100vh;
+}
 
-/* Header */
-header{margin-bottom:3rem;padding-bottom:2rem;border-bottom:1.5px solid var(--border);display:grid;grid-template-columns:1fr auto;align-items:end;gap:1rem}
-.eyebrow{font-family:var(--mono);font-size:11px;font-weight:300;color:var(--rose);letter-spacing:.18em;text-transform:uppercase;margin-bottom:.35rem}
-h1{font-family:var(--serif);font-size:2.4rem;font-weight:700;color:var(--ink);line-height:1.1;letter-spacing:-.5px}
-h1 em{font-style:italic;color:var(--rose)}
-.header-sub{margin-top:.4rem;font-size:13px;color:var(--muted);font-weight:300;max-width:420px}
-.step-pill{font-family:var(--mono);font-size:11px;background:var(--rose-bg);color:var(--rose);border:1px solid var(--rose-lt);border-radius:100px;padding:5px 14px;white-space:nowrap}
+/* ── Header ─────────────────────────────────────────────────────────────── */
+header{
+  padding:3rem 0 .75rem;
+  margin-bottom:1rem;
+  text-align:center;
+}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:300;
+  color:var(--muted);
+  letter-spacing:.22em;
+  margin-bottom:.8rem;
+}
+h1{
+  font-family:var(--display);
+  font-size:3.6rem;
+  font-weight:400;
+  font-style:italic;
+  color:var(--ink);
+  line-height:1;
+  margin-bottom:.5rem;
+}
+h1 span{font-style:normal}
+h1 em{color:var(--rose)}
+.header-sub{
+  font-size:18px;
+  color:var(--muted);
+  font-style:italic;
+  font-weight:300;
+  margin-bottom:1.1rem;
+}
+.step-pill{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:13px;
+  background:var(--rose-bg);
+  color:var(--rose);
+  border:1px solid var(--rose-lt);
+  padding:3px 13px;
+}
 
-/* Section labels */
-.slabel{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.85rem;display:flex;align-items:center;gap:8px}
-.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+/* ── Etiquetas de sección ────────────────────────────────────────────────── */
+.slabel{
+  font-family:var(--serif);
+  font-size:15px;
+  font-variant:small-caps;
+  letter-spacing:.1em;
+  color:var(--ink2);
+  margin-bottom:.9rem;
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border);margin-left:2px}
+.s-sym{
+  color:var(--rose);
+  font-variant:normal;
+  font-family:var(--display);
+  font-style:italic;
+  font-size:18px;
+  line-height:1;
+}
 
-/* Config */
+/* ── Configuración ───────────────────────────────────────────────────────── */
 .config-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:.75rem}
 @media(max-width:580px){.config-row{grid-template-columns:1fr}}
-.field label{display:block;font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);margin-bottom:6px;letter-spacing:.04em}
-.field input{width:100%;background:var(--cream);border:1.5px solid var(--border);border-radius:0;padding:9px 12px;font-family:var(--mono);font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;-webkit-appearance:none}
+.field label{
+  display:block;
+  font-family:var(--mono);
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:5px;
+  letter-spacing:.03em;
+}
+.field input{
+  width:100%;
+  background:var(--cream);
+  border:1px solid var(--border);
+  padding:8px 10px;
+  font-family:var(--mono);
+  font-size:16px;
+  color:var(--ink);
+  outline:none;
+  transition:border-color .15s;
+  -webkit-appearance:none;
+  border-radius:0;
+}
 .field input:focus{border-color:var(--rose)}
 .field input.invalid{border-color:var(--danger);background:var(--danger-bg)}
-.field-hint{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px}
+.field-hint{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px}
 
-/* Primitive alert */
-.prim-status{margin-bottom:2.5rem;font-family:var(--mono);font-size:12px;padding:10px 14px;border:1px solid;display:flex;align-items:flex-start;gap:8px;min-height:40px}
-.prim-status.ok{background:#f0faf6;border-color:#a0d8c0;color:var(--teal)}
+/* ── Estado del polinomio ────────────────────────────────────────────────── */
+.prim-status{
+  margin-bottom:2rem;
+  font-family:var(--serif);
+  font-size:15px;
+  padding:9px 12px;
+  border:1px solid;
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  min-height:36px;
+}
+.prim-status.ok  {background:#eaf4ec;border-color:#6aaa7e;color:#1a4a2a}
 .prim-status.warn{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger)}
 .prim-status.idle{background:var(--cream);border-color:var(--border);color:var(--muted)}
-.prim-icon{flex-shrink:0;font-size:14px}
+.prim-icon{flex-shrink:0;font-size:16px}
 
-/* Register */
-.reg-section{margin-bottom:2.5rem}
-.reg-wrap{overflow-x:auto;padding-bottom:6px}
-.register{display:flex;align-items:center;gap:5px;width:max-content;margin:0 auto;padding:1.5rem 0 .5rem}
-.cell{width:62px;height:62px;border:1.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono);font-size:24px;font-weight:500;color:var(--ink2);background:var(--cream);position:relative;transition:background .25s,border-color .25s,color .25s;flex-shrink:0}
-.cell-idx{position:absolute;bottom:5px;font-size:9px;font-weight:300;color:var(--muted);font-family:var(--mono);letter-spacing:.02em}
-.cell-idx sup{font-size:7px}
+/* ── Registro ────────────────────────────────────────────────────────────── */
+.reg-section{margin-bottom:2rem}
+.reg-wrap{
+  overflow-x:auto;
+  padding:1.25rem 1rem .5rem;
+  background:var(--cream);
+  border:1px solid var(--border);
+}
+.register{display:flex;align-items:center;gap:5px;width:max-content;margin:0 auto;padding:.5rem 0 .25rem}
+.cell{
+  width:60px;height:60px;
+  border:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:22px;font-weight:400;
+  color:var(--ink2);background:var(--paper);
+  position:relative;
+  transition:background .25s,border-color .25s,color .25s;
+  flex-shrink:0;
+}
+.cell-idx{position:absolute;bottom:4px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.cell-idx sup{font-size:9px}
 .cell.is-tap{border-color:var(--rose);background:var(--rose-bg);color:var(--rose)}
-.cell.is-in{background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
+.cell.is-in {background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
 .cell.is-in.is-new{animation:slidein .3s ease}
 @keyframes slidein{from{transform:translateY(-6px);opacity:.4}to{transform:translateY(0);opacity:1}}
-.arr-sym{font-family:var(--mono);font-size:14px;color:var(--border);flex-shrink:0;user-select:none}
-.xor-node{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--rose-dim);background:var(--rose-bg);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;color:var(--rose);flex-shrink:0;transition:background .2s}
+.arr-sym{font-family:var(--mono);font-size:15px;color:var(--border-dark);flex-shrink:0;user-select:none}
+.xor-node{
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--rose-dim);background:var(--rose-bg);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;color:var(--rose);
+  flex-shrink:0;transition:background .2s;
+}
 .xor-node.firing{background:var(--rose);color:white;border-color:var(--rose)}
-.out-node{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;font-weight:500;color:var(--muted);flex-shrink:0;transition:all .25s}
-.out-node.one{background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
+.out-node{
+  width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--border);background:var(--cream);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:17px;font-weight:400;
+  color:var(--muted);flex-shrink:0;transition:all .25s;
+}
+.out-node.one {background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
 .out-node.zero{background:var(--cream2);border-color:var(--border);color:var(--ink2)}
-.tap-note{margin-top:.75rem;font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center}
-.tap-note strong{color:var(--rose)}
+.reg-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:.55rem;
+}
+.tap-note{
+  font-family:var(--mono);font-size:13px;
+  color:var(--muted);font-style:italic;
+}
+.tap-note strong{color:var(--rose);font-style:normal}
 
-/* Keystream */
-.ks-section{margin-bottom:2.5rem}
-.ks-track{display:flex;gap:4px;flex-wrap:wrap;padding:.5rem 0;min-height:38px}
-.ks-bit{width:28px;height:28px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);background:var(--cream);transition:all .2s}
+/* ── Keystream ───────────────────────────────────────────────────────────── */
+.ks-section{margin-bottom:2rem}
+.ks-track{
+  display:flex;gap:3px;flex-wrap:wrap;
+  padding:.6rem .5rem;min-height:38px;
+  background:var(--cream);border:1px solid var(--border);
+}
+.ks-bit{
+  width:30px;height:30px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;
+  color:var(--muted);background:var(--paper);
+  transition:all .2s;
+}
 .ks-bit.k1{background:var(--rose-bg);border-color:var(--rose-lt);color:var(--rose);font-weight:500}
 .ks-bit.k0{background:var(--cream2);color:var(--ink2)}
 .ks-bit.new{animation:pop .2s ease}
 @keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
-.period-note{margin-top:.5rem;font-family:var(--mono);font-size:11px;color:var(--muted)}
-.period-note strong{color:var(--amber)}
+.period-note{margin-top:.4rem;font-family:var(--mono);font-size:13px;color:var(--muted);font-style:italic}
+.period-note strong{color:var(--amber);font-style:normal}
 
-/* Cipher */
-.cipher-section{margin-bottom:2.5rem}
-.cipher-rows{display:flex;flex-direction:column;gap:12px}
+/* ── Cifrado ─────────────────────────────────────────────────────────────── */
+.cipher-section{margin-bottom:2rem}
+.cipher-rows{
+  display:flex;flex-direction:column;gap:10px;
+  padding:.9rem 1rem;
+  background:var(--cream);border:1px solid var(--border);
+}
 .c-row{display:flex;align-items:center;gap:12px}
-.c-label{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:86px;flex-shrink:0;font-weight:300}
+.c-label{font-family:var(--mono);font-size:13px;color:var(--muted);min-width:96px;flex-shrink:0}
 .bits{display:flex;gap:3px;flex-wrap:wrap}
-.bit{width:22px;height:22px;border:1px solid transparent;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px}
-.bit.plain{background:#f0ece3;color:var(--ink2);border-color:var(--border)}
-.bit.key{background:var(--rose-bg);color:var(--rose);border-color:var(--rose-lt)}
-.bit.ciph{background:#fff0f4;color:#b03060;border-color:#f0c0d0}
-.bit.dec{background:#edf7f5;color:var(--teal);border-color:var(--teal-lt)}
-.bit.ell{color:var(--muted);background:none;border-color:transparent}
+.bit{
+  width:24px;height:24px;
+  border:1px solid transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:13px;
+}
+.bit.plain{background:#eae4d8;color:var(--ink2);border-color:var(--border)}
+.bit.key  {background:var(--rose-bg);color:var(--rose);border-color:var(--rose-lt)}
+.bit.ciph {background:#fceef4;color:#982858;border-color:#dca8c0}
+.bit.dec  {background:#eaf4f1;color:var(--teal);border-color:var(--teal-lt)}
+.bit.ell  {color:var(--muted);background:none;border-color:transparent}
 
-/* Controls */
-.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:1.5rem 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:2.5rem}
-button{font-family:var(--mono);font-size:12px;font-weight:400;padding:8px 20px;border:1.5px solid var(--border);background:transparent;color:var(--ink2);cursor:pointer;letter-spacing:.04em;transition:all .15s;-webkit-appearance:none;border-radius:0}
-button:hover{border-color:var(--rose);color:var(--rose)}
+/* ── Controles ───────────────────────────────────────────────────────────── */
+.controls{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  padding:1.2rem 0;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  margin-bottom:2.5rem;
+}
+button{
+  font-family:var(--mono);font-size:14px;font-weight:400;
+  padding:7px 17px;
+  border:1px solid var(--border-dark);
+  background:var(--cream);color:var(--ink2);
+  cursor:pointer;letter-spacing:.03em;
+  transition:all .12s;
+  -webkit-appearance:none;border-radius:0;
+}
+button:hover{border-color:var(--rose);color:var(--rose);background:var(--rose-bg)}
 button:active{transform:scale(.97)}
 button:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 .btn-rose{background:var(--rose);border-color:var(--rose);color:white}
-.btn-rose:hover{background:#c04070;border-color:#c04070;color:white}
-.speed-wrap{display:flex;align-items:center;gap:8px;margin-left:4px}
-.speed-wrap label{font-family:var(--mono);font-size:11px;color:var(--muted)}
-input[type=range]{accent-color:var(--rose);width:72px}
-.counter{margin-left:auto;font-family:var(--serif);font-size:13px;font-style:italic;color:var(--muted)}
+.btn-rose:hover{background:#982040;border-color:#982040;color:white}
+.speed-wrap{display:flex;align-items:center;gap:7px;margin-left:4px}
+.speed-wrap label{font-family:var(--mono);font-size:13px;color:var(--muted)}
+input[type=range]{accent-color:var(--rose);width:68px}
+.counter{margin-left:auto;font-family:var(--serif);font-size:17px;font-style:italic;color:var(--muted)}
 
-/* Info */
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem 3rem;margin-bottom:2.5rem}
+/* ── Texto informativo ───────────────────────────────────────────────────── */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem 3rem;margin-bottom:2.5rem}
 @media(max-width:560px){.info-grid{grid-template-columns:1fr}}
-.info-block h4{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:.35rem}
-.info-block p{font-size:13px;color:var(--muted);font-weight:300;line-height:1.7}
-.info-block code{font-family:var(--mono);font-size:12px;background:var(--cream);border:1px solid var(--border);padding:1px 5px;color:var(--ink2)}
+.info-block h4{
+  font-family:var(--serif);font-size:1rem;
+  font-weight:600;font-variant:small-caps;
+  color:var(--ink);margin-bottom:.2rem;letter-spacing:.04em;
+}
+.info-block p{font-size:16px;color:var(--ink2);font-weight:300;line-height:1.72}
+.info-block code{
+  font-family:var(--mono);font-size:14px;
+  background:var(--cream);border:1px solid var(--border);
+  padding:1px 4px;color:var(--ink2);
+}
 
-/* Table */
+/* ── Tabla ───────────────────────────────────────────────────────────────── */
 .poly-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
-thead th{text-align:left;font-weight:400;color:var(--muted);padding:6px 10px;border-bottom:1.5px solid var(--border);letter-spacing:.04em}
-tbody td{padding:6px 10px;color:var(--ink2);border-bottom:1px solid var(--cream2)}
-tbody tr:last-child td{border-bottom:none}
+table{
+  width:100%;border-collapse:collapse;
+  font-family:var(--mono);font-size:14px;
+  border:1px solid var(--border-dark);
+}
+thead tr{background:var(--cream2)}
+thead th{
+  text-align:left;font-weight:400;
+  color:var(--muted);padding:7px 10px;
+  border:1px solid var(--border);
+  letter-spacing:.05em;font-variant:small-caps;
+}
+tbody td{padding:6px 10px;color:var(--ink2);border:1px solid var(--cream2)}
+tbody tr:nth-child(even){background:var(--cream)}
 tbody td:first-child{color:var(--rose);font-weight:500}
-tbody td:nth-child(2){color:var(--ink2)}
 tbody td:last-child{color:var(--teal)}
 tbody tr.active-row td{background:var(--rose-bg)}
-tbody tr.active-row td:first-child{color:var(--rose)}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover td{background:var(--cream2)}
+tbody tr.active-row:hover td{background:var(--rose-bg)}
 
-.rose-line{height:2px;background:linear-gradient(90deg,var(--rose) 0%,var(--rose-lt) 60%,transparent 100%);margin:2.5rem 0;border:none}
+/* ── Divisor ornamental ──────────────────────────────────────────────────── */
+.orn-div{
+  display:flex;align-items:center;
+  margin:2.5rem 0;
+}
+.orn-div::before,.orn-div::after{content:'';flex:1;height:1px;background:var(--border)}
+.orn-inner{
+  font-family:var(--display);
+  font-style:italic;
+  font-size:16px;
+  color:var(--rose-dim);
+  padding:0 16px;
+  letter-spacing:.15em;
+  white-space:nowrap;
+}
 </style>
 </head>
 <body>
 <div class="shell">
 
 <header>
-  <div>
-    <p class="eyebrow">visualizador interactivo</p>
-    <h1>LFSR <em>Cipher</em></h1>
-    <p class="header-sub">Registro de desplazamiento con retroalimentación lineal — cifrado de flujo paso a paso</p>
-  </div>
-  <span class="step-pill" id="step-pill">paso 0</span>
+  <p class="eyebrow">criptografía</p>
+  <h1><span>lfsr</span> <em>cipher</em></h1>
+  <p class="header-sub">Registro de desplazamiento con retroalimentación lineal, paso a paso</p>
 </header>
 
 <!-- Configuración -->
-<div class="slabel">configuración</div>
+<div class="slabel"><span class="s-sym">§</span> Configuración</div>
 <div class="config-row">
   <div class="field">
-    <label>Semilla (bits, ej: 1011)</label>
+    <label>Semilla</label>
     <input id="seed" type="text" value="1011" placeholder="ej: 1011">
     <p class="field-hint">estado inicial del registro</p>
   </div>
   <div class="field">
-    <label>Taps — exponentes del polinomio</label>
+    <label>Exponentes del polinomio</label>
     <input id="taps" type="text" value="4,3" placeholder="ej: 4,3">
     <p class="field-hint">x⁴+x³+1 → taps: 4,3</p>
   </div>
@@ -169,21 +361,24 @@ tbody tr.active-row td:first-child{color:var(--rose)}
 
 <!-- Registro -->
 <div class="reg-section">
-  <div class="slabel">registro de desplazamiento</div>
+  <div class="slabel"><span class="s-sym">§</span> Registro de desplazamiento</div>
   <div class="reg-wrap"><div class="register" id="register"></div></div>
-  <p class="tap-note" id="tap-note"></p>
+  <div class="reg-footer">
+    <p class="tap-note" id="tap-note"></p>
+    <span class="step-pill" id="step-pill">paso 0</span>
+  </div>
 </div>
 
 <!-- Keystream -->
 <div class="ks-section">
-  <div class="slabel">keystream generado</div>
+  <div class="slabel"><span class="s-sym">§</span> Keystream generado</div>
   <div class="ks-track" id="ks-track"></div>
   <p class="period-note" id="period-note"></p>
 </div>
 
 <!-- Cifrado -->
 <div class="cipher-section">
-  <div class="slabel">cifrado XOR bit a bit</div>
+  <div class="slabel"><span class="s-sym">§</span> Cifrado xor bit a bit</div>
   <div class="cipher-rows">
     <div class="c-row"><span class="c-label">texto plano</span><div class="bits" id="row-plain"></div></div>
     <div class="c-row"><span class="c-label">keystream</span><div class="bits" id="row-ks"></div></div>
@@ -194,28 +389,27 @@ tbody tr.active-row td:first-child{color:var(--rose)}
 
 <!-- Controles -->
 <div class="controls">
-  <button id="btn-step" onclick="stepOnce()">Paso →</button>
-  <button class="btn-rose" id="btn-play" onclick="togglePlay()">▶ Animar</button>
-  <button onclick="resetAll()">↺ Reiniciar</button>
+  <button id="btn-step">Paso →</button>
+  <button class="btn-rose" id="btn-play">▶ Animar</button>
+  <button id="btn-reset">↺ Reiniciar</button>
   <div class="speed-wrap"><label>vel.</label><input type="range" id="speed" min="1" max="5" value="3" step="1"></div>
-  <span class="counter" id="counter">paso 0</span>
 </div>
 
-<hr class="rose-line">
+<div class="orn-div"><span class="orn-inner">✦</span></div>
 
 <!-- Cómo funciona -->
-<div class="slabel">cómo funciona</div>
+<div class="slabel"><span class="s-sym">§</span> Cómo funciona</div>
 <div class="info-grid">
   <div class="info-block">
     <h4>Estructura del registro</h4>
-    <p>El LFSR tiene <em>n</em> celdas. En cada paso el bit LSB sale como keystream, todos los bits se desplazan un lugar, y el nuevo MSB es el XOR de las celdas en posiciones <em>tap</em>.</p>
+    <p>El LFSR tiene <em>n</em> celdas (x¹ … xⁿ). En cada paso xⁿ (derecha) emite el bit de keystream, todos los bits se desplazan a la derecha, y el nuevo x¹ (izquierda) recibe el xor de las celdas en posiciones <em>tap</em>.</p>
   </div>
   <div class="info-block">
     <h4>Taps y polinomio</h4>
     <p>Los taps son los <em>exponentes</em> del polinomio generador. Para <code>x⁴+x³+1</code> los taps son <code>[4, 3]</code> — el término independiente <code>+1</code> es siempre implícito.</p>
   </div>
   <div class="info-block">
-    <h4>Cifrado por XOR</h4>
+    <h4>Cifrado por xor</h4>
     <p>Se aplica <code>C = P ⊕ K</code> byte a byte. El descifrado es idéntico: <code>P = C ⊕ K</code>, regenerando el mismo keystream desde la semilla.</p>
   </div>
   <div class="info-block">
@@ -224,10 +418,10 @@ tbody tr.active-row td:first-child{color:var(--rose)}
   </div>
 </div>
 
-<hr class="rose-line">
+<div class="orn-div"><span class="orn-inner">✦</span></div>
 
 <!-- Tabla de referencia -->
-<div class="slabel">polinomios primitivos de referencia</div>
+<div class="slabel"><span class="s-sym">§</span> Polinomios primitivos de referencia</div>
 <div class="poly-wrap">
   <table id="poly-table">
     <thead><tr><th>n</th><th>taps</th><th>polinomio</th><th>período máximo</th></tr></thead>
@@ -248,32 +442,41 @@ tbody tr.active-row td:first-child{color:var(--rose)}
 </div><!-- /shell -->
 
 <script>
-// ─── Toda la lógica LFSR corre en Python (api.py / lfsr_core.py) ──────────
-// El JS solo mantiene el estado visual y llama a los endpoints REST.
+// ════════════════════════════════════════════════════════════════════════════
+// Toda la lógica LFSR corre en Python (api.py ← lfsr_core.py).
+// Este script solo gestiona estado visual y llama a los endpoints REST.
+//
+// Capas:
+//   1. Constantes y helpers de lectura de inputs
+//   2. Capa API  — fetch a /api/*
+//   3. Estado    — variables que representan el LFSR actual
+//   4. Control   — reset, step, play/pause
+//   5. Render    — dibujar registro, keystream y cifrado
+//   6. UI utils  — primitivo status, tabla, controles
+//   7. Eventos   — toda la lógica de wiring aquí, sin onclick en el HTML
+// ════════════════════════════════════════════════════════════════════════════
 
-// ─── Estado de la UI ──────────────────────────────────────────────────────────
 
-let state = [], taps = [], keystream = [], stepN = 0;
-let playing = false, stepping = false, interval = null;
-let lastOut = null, lastFB = null, primitiveOk = false;
-const SPEEDS = [700, 450, 270, 150, 60];
+// ── 1. Constantes y lectores de inputs ──────────────────────────────────────
 
-const $ = id => document.getElementById(id);
+const SPEEDS  = [700, 450, 270, 150, 60];
+const MAX_BITS = 32;
+const $        = id => document.getElementById(id);
 
-function getSeedArr() {
-  return $('seed').value.replace(/[^01]/g, '').split('').map(Number);
+const getSeedArr = () => $('seed').value.replace(/[^01]/g, '').split('').map(Number);
+const getTapsArr = () => $('taps').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1);
+const getText    = () => $('plaintext').value || 'Hi';
+const getSpd     = () => SPEEDS[parseInt($('speed').value) - 1];
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
-function getTapsArr() {
-  return $('taps').value.split(',')
-    .map(s => parseInt(s.trim()))
-    .filter(n => !isNaN(n) && n >= 1);
-}
-function getText() { return $('plaintext').value || 'Hi'; }
-function getSpd()  { return SPEEDS[parseInt($('speed').value) - 1]; }
 
-// ─── Helper fetch ─────────────────────────────────────────────────────────────
 
-async function api(path, body) {
+// ── 2. Capa API — llama a lfsr_core.py a través de api.py ───────────────────
+
+async function apiFetch(path, body) {
   const res = await fetch(path, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -283,66 +486,27 @@ async function api(path, body) {
   return res.json();
 }
 
-// ─── Verificación de primitivo → POST /api/check-primitive ───────────────────
+const apiCheckPrimitive = (nBits, taps)           => apiFetch('/api/check-primitive', { n_bits: nBits, taps });
+const apiStep           = (state, taps)            => apiFetch('/api/step',            { state, taps });
+const apiEncrypt        = (plaintext, seed, taps)  => apiFetch('/api/encrypt',         { plaintext, seed, taps });
 
-async function updatePrimitiveStatus() {
-  const seed    = getSeedArr();
-  const tapsArr = getTapsArr();
-  const box = $('prim-status');
-  const msg = $('prim-msg');
 
-  if (!seed.length || !tapsArr.length || tapsArr.some(t => t > seed.length)) {
-    box.className = 'prim-status idle';
-    msg.textContent = 'Ingresa semilla y taps válidos para verificar el polinomio.';
-    primitiveOk = false;
-    setControlsEnabled(false);
-    highlightTableRow(null);
-    return;
-  }
+// ── 3. Estado del LFSR (actualizado por la API en cada paso) ─────────────────
 
-  try {
-    const { is_primitive, period, max_period } = await api('/api/check-primitive', {
-      n_bits: seed.length,
-      taps:   tapsArr,
-    });
-    const poly = tapsArr.slice().sort((a,b)=>b-a).map(t=>`x^${t}`).join(' + ') + ' + 1';
-    primitiveOk = is_primitive;
+let state      = [];   // array MSB-first del registro actual
+let taps       = [];   // exponentes activos
+let keystream  = [];   // bits generados hasta ahora
+let stepN      = 0;    // contador de pasos
+let lastOut    = null; // último bit de salida
+let lastFB     = null; // último bit de retroalimentación
+let primitiveOk = false;
 
-    if (is_primitive) {
-      box.className = 'prim-status ok';
-      msg.innerHTML = `✔ <strong>${poly}</strong> es primitivo — período máximo: 2<sup>${seed.length}</sup>−1 = ${max_period}`;
-    } else {
-      box.className = 'prim-status warn';
-      msg.innerHTML = `✘ <strong>${poly}</strong> NO es primitivo — período real: T = ${period} (máximo sería ${max_period}). El keystream se repite y el cifrado es débil.`;
-    }
-    setControlsEnabled(is_primitive);
-    highlightTableRow(tapsArr);
-  } catch {
-    box.className = 'prim-status idle';
-    msg.textContent = 'Error al conectar con el servidor. ¿Está api.py corriendo?';
-    primitiveOk = false;
-    setControlsEnabled(false);
-  }
-}
 
-function setControlsEnabled(enabled) {
-  $('btn-step').disabled = !enabled;
-  $('btn-play').disabled = !enabled;
-}
+// ── 4. Control — reset / step / play ─────────────────────────────────────────
 
-function highlightTableRow(tapsArr) {
-  document.querySelectorAll('#poly-table tbody tr').forEach(tr => {
-    tr.classList.remove('active-row');
-    if (tapsArr) {
-      const rowTaps = tr.dataset.taps.split(',').map(Number);
-      if (rowTaps.length === tapsArr.length &&
-          rowTaps.every((v,i) => v === tapsArr.slice().sort((a,b)=>b-a)[i]))
-        tr.classList.add('active-row');
-    }
-  });
-}
-
-// ─── Animación — POST /api/step ───────────────────────────────────────────────
+let playing  = false;
+let stepping = false;
+let interval = null;
 
 async function resetAll() {
   stopPlay();
@@ -362,7 +526,7 @@ async function stepOnce() {
   if (!primitiveOk || !state.length || stepping) return;
   stepping = true;
   try {
-    const data = await api('/api/step', { state, taps });
+    const data = await apiStep(state, taps);
     lastOut = data.out_bit;
     lastFB  = data.fb;
     keystream.push(data.out_bit);
@@ -393,14 +557,14 @@ function stopPlay() {
   $('btn-play').textContent = '▶ Animar';
 }
 
-// ─── Render (registro y keystream son locales; cifrado viene de la API) ───────
 
+// ── 5. Render — dibuja registro, keystream y sección de cifrado ──────────────
+
+// Render síncrono: usa solo variables locales (state, keystream, stepN…)
 function render(flash = false) {
   renderRegister(flash);
   renderKeystream();
-  const label = 'paso ' + stepN;
-  $('counter').textContent   = label;
-  $('step-pill').textContent = label;
+  $('step-pill').textContent = 'paso ' + stepN;
 }
 
 function renderRegister(flash) {
@@ -409,131 +573,184 @@ function renderRegister(flash) {
   const n = state.length;
 
   // Layout: ⊕ → [x¹] → [x²] → … → [xⁿ] → salida
-  // state[0]=MSB=x¹ (retroalimentación entra izquierda)
-  // state[n-1]=LSB=xⁿ (salida sale derecha)
+  // state[0] = x¹ (MSB, recibe retroalimentación — izquierda)
+  // state[n-1] = xⁿ (LSB, emite bit de salida — derecha)
 
-  const xn = document.createElement('div');
-  xn.className = 'xor-node' + (flash && lastFB !== null ? ' firing' : '');
-  xn.textContent = '⊕';
-  el.appendChild(xn);
+  const xorNode = document.createElement('div');
+  xorNode.className = 'xor-node' + (flash && lastFB !== null ? ' firing' : '');
+  xorNode.textContent = '⊕';
+  el.appendChild(xorNode);
+  el.appendChild(makeArrow());
 
-  const a0 = document.createElement('span');
-  a0.className = 'arr-sym'; a0.textContent = '→';
-  el.appendChild(a0);
-
-  for (let visual = 0; visual < n; visual++) {
-    const arrIdx = visual;
-    const exp    = visual + 1;
-
-    const cell  = document.createElement('div');
+  for (let i = 0; i < n; i++) {
+    const exp   = i + 1;
     const isTap = taps.includes(exp);
-    const isIn  = arrIdx === 0 && !isTap && stepN > 0;
+    const isIn  = i === 0 && !isTap && stepN > 0;
     const isNew = isIn && flash;
 
+    const cell = document.createElement('div');
     cell.className = 'cell'
       + (isTap ? ' is-tap' : '')
       + (isIn  ? ' is-in'  : '')
       + (isNew ? ' is-new' : '');
-    cell.innerHTML = state[arrIdx] + '<span class="cell-idx">x<sup>' + exp + '</sup></span>';
+    cell.innerHTML = state[i] + `<span class="cell-idx">x<sup>${exp}</sup></span>`;
     el.appendChild(cell);
-
-    if (visual < n - 1) {
-      const a = document.createElement('span');
-      a.className = 'arr-sym'; a.textContent = '→';
-      el.appendChild(a);
-    }
+    if (i < n - 1) el.appendChild(makeArrow());
   }
 
-  const aOut = document.createElement('span');
-  aOut.className = 'arr-sym'; aOut.textContent = '→';
-  el.appendChild(aOut);
+  el.appendChild(makeArrow());
 
-  const ob = document.createElement('div');
-  ob.className = 'out-node' + (lastOut === 1 ? ' one' : lastOut === 0 ? ' zero' : '');
-  ob.textContent = lastOut !== null ? lastOut : '?';
-  el.appendChild(ob);
+  const outNode = document.createElement('div');
+  outNode.className = 'out-node' + (lastOut === 1 ? ' one' : lastOut === 0 ? ' zero' : '');
+  outNode.textContent = lastOut !== null ? lastOut : '?';
+  el.appendChild(outNode);
 
   $('tap-note').innerHTML = taps.length
-    ? 'taps: <strong>' + taps.slice().sort((a,b)=>a-b).map(t=>`x<sup>${t}</sup>`).join(', ') + '</strong> — borde rosa'
+    ? 'taps: <strong>' + taps.slice().sort((a,b)=>a-b).map(t=>`x<sup>${t}</sup>`).join(', ') + '</strong>'
     : 'sin taps configurados';
+}
+
+function makeArrow() {
+  const a = document.createElement('span');
+  a.className = 'arr-sym';
+  a.textContent = '→';
+  return a;
 }
 
 function renderKeystream() {
   const track = $('ks-track');
   const prev  = track.children.length;
   for (let i = prev; i < keystream.length; i++) {
-    const d = document.createElement('div');
-    d.className = 'ks-bit new ' + (keystream[i] ? 'k1' : 'k0');
-    d.textContent = keystream[i];
-    track.appendChild(d);
-    setTimeout(() => d.classList.remove('new'), 250);
+    const bit = document.createElement('div');
+    bit.className = 'ks-bit new ' + (keystream[i] ? 'k1' : 'k0');
+    bit.textContent = keystream[i];
+    track.appendChild(bit);
+    setTimeout(() => bit.classList.remove('new'), 250);
   }
   const n    = getSeedArr().length;
   const maxP = (1 << n) - 1;
   $('period-note').innerHTML = keystream.length
-    ? keystream.length + ' bits generados &nbsp;·&nbsp; período máximo: <strong>2<sup>' + n + '</sup>−1 = ' + maxP + '</strong>'
+    ? `${keystream.length} bits generados &nbsp;·&nbsp; período máximo: <strong>2<sup>${n}</sup>−1 = ${maxP}</strong>`
     : '';
 }
 
-// ─── Cifrado → POST /api/encrypt ─────────────────────────────────────────────
-
+// Render asíncrono: pide los bits del cifrado a la API
 async function renderCipher() {
+  const rows = ['row-plain','row-ks','row-cipher','row-decoded'];
   if (!primitiveOk) {
-    ['row-plain','row-ks','row-cipher','row-decoded'].forEach(id => $(id).innerHTML = '');
+    rows.forEach(id => $(id).innerHTML = '');
     return;
   }
   try {
-    const data = await api('/api/encrypt', {
-      plaintext: getText(),
-      seed:      getSeedArr(),
-      taps:      getTapsArr(),
-    });
-    const MAX = 32;
-    function fill(id, bits, cls) {
-      const el = $(id); el.innerHTML = '';
-      bits.slice(0, MAX).forEach(b => {
-        const d = document.createElement('div');
-        d.className = 'bit ' + cls; d.textContent = b;
-        el.appendChild(d);
-      });
-      if (bits.length > MAX) {
-        const d = document.createElement('div');
-        d.className = 'bit ell'; d.textContent = '…';
-        el.appendChild(d);
-      }
-    }
-    fill('row-plain',   data.plain_bits,   'plain');
-    fill('row-ks',      data.keystream,     'key');
-    fill('row-cipher',  data.cipher_bits,   'ciph');
-    fill('row-decoded', data.decoded_bits,  'dec');
+    const data = await apiEncrypt(getText(), getSeedArr(), getTapsArr());
+    fillBits('row-plain',   data.plain_bits,   'plain');
+    fillBits('row-ks',      data.keystream,     'key');
+    fillBits('row-cipher',  data.cipher_bits,   'ciph');
+    fillBits('row-decoded', data.decoded_bits,  'dec');
   } catch (e) {
     console.error('Error en /api/encrypt:', e);
   }
 }
 
-// ─── Eventos ──────────────────────────────────────────────────────────────────
+function fillBits(id, bits, cls) {
+  const el = $(id);
+  el.innerHTML = '';
+  bits.slice(0, MAX_BITS).forEach(b => {
+    const d = document.createElement('div');
+    d.className = `bit ${cls}`;
+    d.textContent = b;
+    el.appendChild(d);
+  });
+  if (bits.length > MAX_BITS) {
+    const ell = document.createElement('div');
+    ell.className = 'bit ell';
+    ell.textContent = '…';
+    el.appendChild(ell);
+  }
+}
 
-['seed', 'taps', 'plaintext'].forEach(id => $(id).addEventListener('input', () => resetAll()));
+
+// ── 6. UI utils — estado de primitivo, tabla, controles ──────────────────────
+
+async function updatePrimitiveStatus() {
+  const seed    = getSeedArr();
+  const tapsArr = getTapsArr();
+  const box     = $('prim-status');
+  const msg     = $('prim-msg');
+
+  if (!seed.length || !tapsArr.length || tapsArr.some(t => t > seed.length)) {
+    box.className   = 'prim-status idle';
+    msg.textContent = 'Ingresa semilla y taps válidos para verificar el polinomio.';
+    primitiveOk = false;
+    setControlsEnabled(false);
+    highlightTableRow(null);
+    return;
+  }
+
+  try {
+    const { is_primitive, period, max_period } = await apiCheckPrimitive(seed.length, tapsArr);
+    const poly = tapsArr.slice().sort((a,b)=>b-a).map(t=>`x^${t}`).join(' + ') + ' + 1';
+    primitiveOk = is_primitive;
+    if (is_primitive) {
+      box.className  = 'prim-status ok';
+      msg.innerHTML  = `✔ <strong>${poly}</strong> es primitivo — período máximo: 2<sup>${seed.length}</sup>−1 = ${max_period}`;
+    } else {
+      box.className  = 'prim-status warn';
+      msg.innerHTML  = `✘ <strong>${poly}</strong> NO es primitivo — período real: T = ${period} (máximo sería ${max_period}). El keystream se repite y el cifrado es débil.`;
+    }
+    setControlsEnabled(is_primitive);
+    highlightTableRow(tapsArr);
+  } catch {
+    box.className   = 'prim-status idle';
+    msg.textContent = 'Error al conectar con el servidor. ¿Está api.py corriendo?';
+    primitiveOk = false;
+    setControlsEnabled(false);
+  }
+}
+
+function setControlsEnabled(enabled) {
+  $('btn-step').disabled = !enabled;
+  $('btn-play').disabled = !enabled;
+}
+
+function highlightTableRow(tapsArr) {
+  document.querySelectorAll('#poly-table tbody tr').forEach(tr => {
+    tr.classList.remove('active-row');
+    if (!tapsArr) return;
+    const rowTaps = tr.dataset.taps.split(',').map(Number);
+    const sorted  = tapsArr.slice().sort((a,b) => b - a);
+    if (rowTaps.length === sorted.length && rowTaps.every((v,i) => v === sorted[i]))
+      tr.classList.add('active-row');
+  });
+}
+
+
+// ── 7. Eventos — todo el wiring aquí, sin onclick en el HTML ─────────────────
+
+$('btn-step').addEventListener('click',  () => stepOnce());
+$('btn-play').addEventListener('click',  () => togglePlay());
+$('btn-reset').addEventListener('click', () => resetAll());
+
 $('speed').addEventListener('input', () => { if (playing) { stopPlay(); togglePlay(); } });
+
+const onInputChange = debounce(() => resetAll(), 300);
+['seed', 'taps', 'plaintext'].forEach(id => $(id).addEventListener('input', onInputChange));
 
 document.querySelectorAll('#poly-table tbody tr').forEach(tr => {
   tr.style.cursor = 'pointer';
   tr.addEventListener('click', () => {
-    const n    = parseInt(tr.children[0].textContent);
-    const tStr = tr.dataset.taps;
-    $('taps').value = tStr;
-    const cur = getSeedArr();
-    if (cur.length !== n) $('seed').value = '1' + '0'.repeat(n - 1);
+    const n = parseInt(tr.children[0].textContent);
+    $('taps').value = tr.dataset.taps;
+    if (getSeedArr().length !== n) $('seed').value = '1' + '0'.repeat(n - 1);
     resetAll();
   });
 });
 
 if (location.protocol === 'file:') {
-  const box = $('prim-status');
-  box.className = 'prim-status warn';
+  $('prim-status').className = 'prim-status warn';
   $('prim-msg').innerHTML =
-    '⚠ Abriste el archivo directamente. Para que funcione debes acceder a ' +
-    '<strong>http://localhost:8000</strong> después de correr ' +
+    '⚠ Abriste el archivo directamente. Accede a ' +
+    '<strong>http://localhost:8000</strong> tras correr ' +
     '<code>uvicorn api:app --reload</code> en la carpeta del proyecto.';
   setControlsEnabled(false);
 } else {
