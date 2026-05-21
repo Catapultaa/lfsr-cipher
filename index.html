@@ -58,8 +58,8 @@ h1 em{font-style:italic;color:var(--rose)}
 .cell-idx{position:absolute;bottom:5px;font-size:9px;font-weight:300;color:var(--muted);font-family:var(--mono);letter-spacing:.02em}
 .cell-idx sup{font-size:7px}
 .cell.is-tap{border-color:var(--rose);background:var(--rose-bg);color:var(--rose)}
-.cell.is-new{background:var(--rose-bg);border-color:var(--rose);color:var(--rose);animation:slidein .3s ease}
-.cell.is-out{background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
+.cell.is-in{background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
+.cell.is-in.is-new{animation:slidein .3s ease}
 @keyframes slidein{from{transform:translateY(-6px);opacity:.4}to{transform:translateY(0);opacity:1}}
 .arr-sym{font-family:var(--mono);font-size:14px;color:var(--border);flex-shrink:0;user-select:none}
 .xor-node{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--rose-dim);background:var(--rose-bg);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;color:var(--rose);flex-shrink:0;transition:background .2s}
@@ -258,7 +258,7 @@ function lfsrStep(s, taps) {
   const n      = s.length;
   const outBit = s[n - 1];                               // LSB = salida
   const fb     = taps.reduce((acc, t) => {               // XOR de los taps
-    const pos = n - t;                                   // convertir exponente → índice
+    const pos = t - 1;                                   // tap t → índice t-1 (igual que Python: bit n-t del entero = s[t-1])
     return acc ^ (pos >= 0 && pos < n ? s[pos] : 0);
   }, 0);
   return { newState: [fb, ...s.slice(0, n - 1)], outBit, fb };
@@ -451,39 +451,49 @@ function renderRegister(flash) {
   el.innerHTML = '';
   const n = state.length;
 
-  // Convención de clase: x¹ más a la izquierda, x^n más a la derecha.
-  // state[0]=MSB=x^n  ...  state[n-1]=LSB=x¹
-  // visual=0 → arrIdx=n-1 → exponente x¹ (izquierda) ← entra nuevo bit
-  // visual=n-1 → arrIdx=0 → exponente x^n (derecha)  → sale el bit de salida
+  // Layout: ⊕ → [x¹] → [x²] → … → [xⁿ] → salida
+  // state[0] = MSB = celda x¹ (nueva retroalimentación entra aquí, izquierda)
+  // state[n-1] = LSB = celda xⁿ (salida sale de aquí, derecha)
+  // tap t → arrIdx = t-1  (igual que Python: bit n-t del entero = s[t-1])
 
-  for (let visual = 0; visual < n; visual++) {
-    const arrIdx = n - 1 - visual;   // arrIdx 0 = x¹ (izquierda), arrIdx n-1 = x^n (derecha)
-    const exp    = visual + 1;        // exponente: 1, 2, 3, ..., n
-
-    if (visual > 0) {
-      const a = document.createElement('span');
-      a.className = 'arr-sym'; a.textContent = '→';
-      el.appendChild(a);
-    }
-
-    const cell   = document.createElement('div');
-    const isTap  = taps.includes(exp);              // exponente directo
-    const isNew  = flash && arrIdx === n - 1;        // nuevo bit entra por x¹ (izquierda)
-    const isOut  = flash && arrIdx === 0;            // salida sale de x^n (derecha)
-
-    cell.className = 'cell'
-      + (isTap  ? ' is-tap' : '')
-      + (isNew  ? ' is-new' : '')
-      + (isOut  ? ' is-out' : '');
-    cell.innerHTML = state[arrIdx] + '<span class="cell-idx">x<sup>' + exp + '</sup></span>';
-    el.appendChild(cell);
-  }
-
-  // XOR y burbuja de salida a la derecha
+  // ① Nodo XOR — izquierda del todo
   const xn = document.createElement('div');
   xn.className = 'xor-node' + (flash && lastFB !== null ? ' firing' : '');
   xn.textContent = '⊕';
   el.appendChild(xn);
+
+  const a0 = document.createElement('span');
+  a0.className = 'arr-sym'; a0.textContent = '→';
+  el.appendChild(a0);
+
+  // ② Celdas x¹ … xⁿ de izquierda a derecha
+  for (let visual = 0; visual < n; visual++) {
+    const arrIdx = visual;        // s[0]=x¹ … s[n-1]=xⁿ
+    const exp    = visual + 1;    // exp: 1, 2, …, n
+
+    const cell  = document.createElement('div');
+    const isTap = taps.includes(exp);
+    const isIn  = arrIdx === 0 && !isTap && stepN > 0;  // x¹ verde solo tras el primer paso
+    const isNew = isIn && flash;            // animación solo al entrar un bit nuevo
+
+    cell.className = 'cell'
+      + (isTap  ? ' is-tap' : '')
+      + (isIn   ? ' is-in'  : '')
+      + (isNew  ? ' is-new' : '');
+    cell.innerHTML = state[arrIdx] + '<span class="cell-idx">x<sup>' + exp + '</sup></span>';
+    el.appendChild(cell);
+
+    if (visual < n - 1) {
+      const a = document.createElement('span');
+      a.className = 'arr-sym'; a.textContent = '→';
+      el.appendChild(a);
+    }
+  }
+
+  // ③ Flecha y burbuja de salida — derecha del todo
+  const aOut = document.createElement('span');
+  aOut.className = 'arr-sym'; aOut.textContent = '→';
+  el.appendChild(aOut);
 
   const ob = document.createElement('div');
   ob.className = 'out-node' + (lastOut === 1 ? ' one' : lastOut === 0 ? ' zero' : '');
