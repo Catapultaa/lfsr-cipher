@@ -14,7 +14,6 @@ Funciones:
 """
 
 from typing import List, Tuple
-import math
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +52,7 @@ class LFSR:
                     la retroalimentación siempre sería 0 y el registro
                     quedaría atrapado para siempre.
 
-        Raises:
+        Lanza:
             ValueError: Si seed == 0 o algún tap está fuera de rango.
         """
         if seed == 0:
@@ -71,15 +70,40 @@ class LFSR:
 
     @property
     def state_binary(self) -> str:
-        """Estado actual como cadena binaria de longitud fija."""
+        """
+        Retorna el estado actual del registro como cadena binaria de ancho fijo.
+
+        La cadena se rellena con ceros por la izquierda hasta exactamente
+        ``n_bits`` caracteres. El índice 0 corresponde al bit más significativo
+        (x¹, posición de entrada de retroalimentación); el índice ``n_bits − 1``
+        corresponde al bit menos significativo (xⁿ, posición de salida).
+
+        Esta propiedad es de solo lectura y no avanza ni muta el registro.
+
+        Retorna:
+            str: Representación binaria de ``self.state`` rellenada con ceros,
+                 siempre de ``n_bits`` caracteres. Ejemplo: state=6, n_bits=4
+                 produce ``'0110'``.
+        """
         return format(self.state, f'0{self.n_bits}b')
 
     @property
     def tap_mask(self) -> int:
         """
-        Máscara entera con un 1 en cada posición de tap.
+        Máscara entera con un 1 en cada posición de tap activa.
+
         Tap i (1-indexed desde MSB) → bit en posición (n_bits − i).
         Permite calcular la retroalimentación con una sola operación AND.
+
+        Con esta máscara, el bit de retroalimentación XOR se reduce a una sola
+        expresión: ``bin(state & tap_mask).count('1') % 2``, evitando un
+        bucle explícito sobre las posiciones de tap en cada ciclo de reloj.
+
+        Retorna:
+            int: Máscara cuyos bits activos corresponden a las posiciones de tap
+                 del polinomio de retroalimentación. El valor se deriva
+                 exclusivamente de ``self.taps`` y ``self.n_bits``, y se
+                 recalcula en cada acceso.
         """
         mask = 0
         for tap in self.taps:
@@ -100,7 +124,7 @@ class LFSR:
           3. El registro se desplaza un bit a la derecha.
           4. La retroalimentación entra por el MSB.
 
-        Returns:
+        Retorna:
             int: 0 o 1.
         """
         output_bit = self.state & 1
@@ -110,15 +134,49 @@ class LFSR:
         return output_bit
 
     def generate(self, n: int) -> List[int]:
-        """Genera n bits ejecutando step() n veces."""
+        """
+        Avanza el registro ``n`` pasos y retorna los bits de salida recolectados.
+
+        Llama a :py:meth:`step` exactamente ``n`` veces en secuencia. Cada
+        llamada muta ``self.state`` y agrega a ``self.output_sequence``. Los
+        bits se retornan en el orden en que fueron producidos.
+
+        Args:
+            n (int): Número de ciclos de reloj a ejecutar. Cero es válido y
+                     produce una lista vacía.
+
+        Retorna:
+            List[int]: Lista ordenada de ``n`` bits de salida (cada uno 0 o 1),
+                       donde el índice 0 es el primer bit emitido.
+        """
         return [self.step() for _ in range(n)]
 
     def compute_period(self) -> int:
         """
+        Calcula el período real de la secuencia LFSR.
+
         Calcula el período real: número de pasos hasta que el estado
         vuelve exactamente al estado inicial (semilla).
 
         No modifica el estado del objeto.
+
+        El método guarda el ``self.state`` actual, reinicia a ``self.seed``
+        y avanza el registro paso a paso hasta que el estado regresa a la
+        semilla (o se supera el límite máximo de ``2^n_bits`` pasos, como
+        protección contra polinomios degenerados). El estado original se
+        restaura tras la medición.
+
+        Retorna:
+            int: El período T tal que, tras exactamente T pasos a partir de
+                 ``self.seed``, el registro vuelve a ``self.seed``.
+                 Para un polinomio primitivo, T = 2^n_bits − 1.
+                 Para un polinomio no primitivo, T < 2^n_bits − 1.
+
+        Nota:
+            ``self.output_sequence`` se extiende como efecto secundario de
+            las llamadas internas a ``step()``, pero se sobreescribe cuando
+            se restaura el estado; los llamadores no deben depender de su
+            contenido tras el retorno de este método.
         """
         saved      = self.state
         self.state = self.seed
@@ -132,16 +190,45 @@ class LFSR:
         return count
 
     def reset(self) -> None:
-        """Reinicia el registro a la semilla original."""
+        """
+        Reinicia el registro a su estado semilla original.
+
+        Restaura ``self.state`` a ``self.seed`` y limpia
+        ``self.output_sequence``. Tras esta llamada, el registro es
+        indistinguible de una instancia recién construida con los mismos
+        argumentos ``n_bits``, ``taps`` y ``seed``.
+
+        Retorna:
+            None
+        """
         self.state           = self.seed
         self.output_sequence = []
 
     def get_state_table(self, max_steps: int = None) -> List[Tuple]:
         """
-        Devuelve la tabla de estados durante un período completo.
+        Retorna la tabla de evolución de estados durante un período completo.
 
-        Returns:
-            Lista de (paso, estado_binario_antes, bit_salida).
+        Calcula la secuencia completa de estados del registro a partir de
+        ``self.seed`` durante un período completo, o hasta ``max_steps`` pasos
+        si se especifica. El objeto no se muta: ``self.state`` y
+        ``self.output_sequence`` se guardan y restauran alrededor del cálculo.
+
+        Args:
+            max_steps (int | None): Número máximo de filas a incluir en la
+                tabla. Cuando es ``None`` (valor predeterminado), se usa el
+                período completo. Si se proporciona, la salida contiene
+                ``min(max_steps, period)`` filas.
+
+        Retorna:
+            List[Tuple]: Lista ordenada de tuplas de tres elementos, una por paso:
+
+                * ``paso`` (int)          — Índice de paso basado en 1.
+                * ``estado_antes`` (str)  — Estado binario del registro *antes*
+                  del paso, rellenado con ceros a ``n_bits`` caracteres.
+                * ``bit_salida`` (int)    — Bit de salida producido en ese paso
+                  (0 o 1).
+
+        Nota:
             No modifica el estado del objeto.
         """
         saved      = self.state
@@ -178,17 +265,56 @@ class LFSRPseudorandomGenerator:
     """
 
     def __init__(self, n_bits: int, taps: List[int], seed: int):
+        """
+        Inicializa el generador construyendo el LFSR interno.
+
+        Args:
+            n_bits (int): Número de etapas del registro LFSR.
+            taps (List[int]): Exponentes de los términos del polinomio de
+                retroalimentación (excluyendo el término constante implícito
+                ``+1``). Véase :py:class:`LFSR` para la convención de taps.
+            seed (int): Estado inicial no nulo del LFSR.
+
+        Lanza:
+            ValueError: Propagado desde :py:class:`LFSR` si ``seed == 0``
+                o si algún tap está fuera del rango ``[1, n_bits]``.
+        """
         self._lfsr = LFSR(n_bits, taps, seed)
 
     def next_byte(self) -> int:
-        """Devuelve el próximo byte (0–255) del keystream."""
+        """
+        Retorna el siguiente byte del keystream consumiendo ocho bits de salida del LFSR.
+
+        Llama a :py:meth:`LFSR.generate` para obtener ocho bits consecutivos y
+        los ensambla en un entero usando orden de bits big-endian (MSB primero):
+        el primer bit producido por el LFSR se convierte en el bit 7, y el
+        octavo bit en el bit 0 del byte retornado.
+
+        Retorna:
+            int: Un entero en el rango cerrado [0, 255] que representa el
+                 siguiente byte del keystream pseudoaleatorio.
+        """
         byte_val = 0
         for bit in self._lfsr.generate(8):
             byte_val = (byte_val << 1) | bit
         return byte_val
 
     def generate_bytes(self, n: int) -> bytes:
-        """Genera n bytes de keystream."""
+        """
+        Genera una secuencia contigua de ``n`` bytes del keystream.
+
+        Llama a :py:meth:`next_byte` exactamente ``n`` veces en secuencia.
+        Los bytes se producen en orden y se empaquetan en un objeto
+        :class:`bytes`. El estado interno del LFSR avanza ``8 * n`` pasos.
+
+        Args:
+            n (int): Número de bytes del keystream a producir.
+                     Cero es válido y retorna un objeto :class:`bytes` vacío.
+
+        Retorna:
+            bytes: Un objeto :class:`bytes` de longitud ``n`` que contiene
+                   el keystream.
+        """
         return bytes([self.next_byte() for _ in range(n)])
 
 
@@ -208,7 +334,7 @@ def check_primitive(n_bits: int, taps: List[int]) -> Tuple[bool, int]:
         n_bits: Grado del polinomio.
         taps:   Exponentes (ej: [4, 3] para x^4 + x^3 + 1).
 
-    Returns:
+    Retorna:
         (True,  2^n-1)  si ES primitivo.
         (False, T)      si NO lo es, donde T es el período real.
     """
@@ -248,7 +374,29 @@ def require_primitive(n_bits: int, taps: List[int]) -> None:
 
 
 def _suggest_primitive(n_bits: int) -> str:
-    """Polinomio primitivo conocido para n bits (tabla de referencia)."""
+    """
+    Retorna una sugerencia de polinomio primitivo legible para un grado dado.
+
+    Busca ``n_bits`` en una tabla de referencia estática de polinomios
+    primitivos conocidos sobre GF(2). La tabla cubre los tamaños de registro
+    más comunes (de 2 a 16 bits).
+
+    Args:
+        n_bits (int): Grado del polinomio de retroalimentación / número de
+                      etapas del registro.
+
+    Retorna:
+        str: Cadena descriptiva de la forma ``"taps=[…] → x^n+…+1"`` para
+             los grados conocidos. Para grados no presentes en la tabla,
+             retorna una cadena genérica que indica al llamador que consulte
+             una referencia externa.
+
+    Nota:
+        Esta es una función auxiliar privada destinada exclusivamente al uso
+        por :py:func:`require_primitive`. La tabla es un subconjunto estático
+        de la lista completa de polinomios primitivos sobre GF(2); para grados
+        no listados debe consultarse una fuente externa autorizada.
+    """
     table = {
         2:  "taps=[2,1]        →  x^2+x+1",
         3:  "taps=[3,2]        →  x^3+x^2+1",
@@ -322,10 +470,10 @@ class LFSRStreamCipher:
             plaintext: Texto a cifrar.
             encoding:  Codificación del texto (default: utf-8).
 
-        Returns:
+        Retorna:
             bytes: Texto cifrado.
 
-        Raises:
+        Lanza:
             ValueError: Si el polinomio no es primitivo.
         """
         require_primitive(self.n_bits, self.taps)
@@ -343,10 +491,10 @@ class LFSRStreamCipher:
             ciphertext: Bytes a descifrar.
             encoding:   Codificación del texto original.
 
-        Returns:
+        Retorna:
             str: Texto descifrado.
 
-        Raises:
+        Lanza:
             ValueError: Si el polinomio no es primitivo.
         """
         require_primitive(self.n_bits, self.taps)

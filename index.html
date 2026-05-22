@@ -463,11 +463,61 @@ const SPEEDS  = [700, 450, 270, 150, 60];
 const MAX_BITS = 32;
 const $        = id => document.getElementById(id);
 
+/**
+ * Lee el campo de entrada de la semilla y retorna un arreglo de dígitos binarios con MSB primero.
+ *
+ * Elimina cualquier carácter que no sea '0' o '1', divide el resto en
+ * caracteres individuales y convierte cada uno a Number.
+ *
+ * @returns {number[]} Arreglo de dígitos binarios con MSB primero (cada uno 0 o 1).
+ *   Retorna un arreglo vacío si el campo no contiene caracteres binarios válidos.
+ */
 const getSeedArr = () => $('seed').value.replace(/[^01]/g, '').split('').map(Number);
+
+/**
+ * Lee el campo de entrada de taps y retorna un arreglo de enteros positivos.
+ *
+ * Divide la cadena en comas, elimina espacios de cada token, lo analiza como
+ * entero y descarta cualquier token que sea NaN o menor que 1.
+ *
+ * @returns {number[]} Arreglo de exponentes de tap. Puede estar vacío si el
+ *   campo no contiene enteros positivos válidos.
+ */
 const getTapsArr = () => $('taps').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1);
+
+/**
+ * Retorna el valor actual del campo de texto plano a cifrar.
+ *
+ * Utiliza {@code 'Hi'} como valor de respaldo cuando el campo está vacío,
+ * garantizando que la sección de cifrado siempre tenga contenido para mostrar.
+ *
+ * @returns {string} El texto a cifrar.
+ */
 const getText    = () => $('plaintext').value || 'Hi';
+
+/**
+ * Traduce la posición del control deslizante de velocidad (1–5) a un intervalo en milisegundos.
+ *
+ * Mapea el valor 1 del control (más lento) a 700 ms y el valor 5 (más rápido)
+ * a 60 ms usando la tabla de búsqueda {@link SPEEDS}.
+ *
+ * @returns {number} Intervalo de animación en milisegundos.
+ */
 const getSpd     = () => SPEEDS[parseInt($('speed').value) - 1];
 
+/**
+ * Crea una versión con retardo (debounce) de una función que difiere su invocación.
+ *
+ * Tras llamar al envoltorio, la ejecución real de {@code fn} se pospone
+ * {@code ms} milisegundos. Volver a llamar al envoltorio antes de que el
+ * temporizador expire reinicia la cuenta. Se usa para consolidar eventos de
+ * entrada rápidos en una sola llamada a {@link resetAll}.
+ *
+ * @param {Function} fn - La función a aplicar debounce.
+ * @param {number}   ms - Retardo de debounce en milisegundos.
+ * @returns {Function} Un envoltorio que, al invocarse, programa {@code fn}
+ *   para ejecutarse tras {@code ms} ms de inactividad, reenviando todos los argumentos.
+ */
 function debounce(fn, ms) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
@@ -476,6 +526,21 @@ function debounce(fn, ms) {
 
 // ── 2. Capa API — llama a lfsr_core.py a través de api.py ───────────────────
 
+/**
+ * Envía una solicitud POST con JSON a un endpoint de la API y retorna la respuesta analizada.
+ *
+ * Serializa {@code body} como JSON, emite una solicitud POST con el tipo de
+ * contenido {@code application/json} y analiza el cuerpo de la respuesta como
+ * JSON. Lanza un error si el estado HTTP no está en el rango 2xx.
+ *
+ * @async
+ * @param {string} path - URL relativa del endpoint (ej.: {@code '/api/step'}).
+ * @param {Object} body - Objeto JavaScript a serializar como JSON en el cuerpo
+ *   de la solicitud.
+ * @returns {Promise<Object>} Resuelto con el cuerpo de respuesta JSON analizado.
+ * @throws {Error} Cuando el estado de la respuesta no es OK; el mensaje de
+ *   error contiene el texto de respuesta sin procesar del servidor.
+ */
 async function apiFetch(path, body) {
   const res = await fetch(path, {
     method:  'POST',
@@ -486,8 +551,36 @@ async function apiFetch(path, body) {
   return res.json();
 }
 
+/**
+ * Llama a {@code /api/check-primitive} para verificar la primitividad del polinomio.
+ *
+ * @async
+ * @param {number}   nBits - Número de etapas del LFSR / grado del polinomio.
+ * @param {number[]} taps  - Arreglo de exponentes de tap.
+ * @returns {Promise<{is_primitive: boolean, period: number, max_period: number}>}
+ */
 const apiCheckPrimitive = (nBits, taps)           => apiFetch('/api/check-primitive', { n_bits: nBits, taps });
+
+/**
+ * Llama a {@code /api/step} para avanzar el LFSR un ciclo de reloj.
+ *
+ * @async
+ * @param {number[]} state - Estado actual del registro como arreglo binario con MSB primero.
+ * @param {number[]} taps  - Arreglo de exponentes de tap.
+ * @returns {Promise<{new_state: number[], out_bit: number, fb: number}>}
+ */
 const apiStep           = (state, taps)            => apiFetch('/api/step',            { state, taps });
+
+/**
+ * Llama a {@code /api/encrypt} para obtener los datos de cifrado a nivel de bits.
+ *
+ * @async
+ * @param {string}   plaintext - Texto UTF-8 a cifrar.
+ * @param {number[]} seed      - Estado inicial del LFSR como arreglo binario con MSB primero.
+ * @param {number[]} taps      - Arreglo de exponentes de tap.
+ * @returns {Promise<{plain_bits: number[], keystream: number[],
+ *   cipher_bits: number[], decoded_bits: number[]}>}
+ */
 const apiEncrypt        = (plaintext, seed, taps)  => apiFetch('/api/encrypt',         { plaintext, seed, taps });
 
 
@@ -508,6 +601,18 @@ let playing  = false;
 let stepping = false;
 let interval = null;
 
+/**
+ * Reinicia el visualizador a su estado inicial a partir de los valores de entrada actuales.
+ *
+ * Detiene cualquier animación en ejecución, vuelve a leer los campos de semilla,
+ * taps y texto plano en las variables de estado globales, limpia la pista del
+ * keystream, vuelve a verificar la primitividad del polinomio, redibuja el
+ * registro y actualiza la sección de cifrado. Debe llamarse tras cualquier
+ * cambio de configuración para mantener la interfaz consistente con las entradas.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function resetAll() {
   stopPlay();
   state     = getSeedArr();
@@ -522,6 +627,22 @@ async function resetAll() {
   await renderCipher();
 }
 
+/**
+ * Avanza el LFSR exactamente un paso y actualiza la visualización.
+ *
+ * Envía el estado actual del registro a {@code /api/step} y, en caso de
+ * éxito, agrega el bit de salida retornado a {@link keystream}, reemplaza
+ * {@link state} con el nuevo estado, almacena los bits de salida y
+ * retroalimentación en {@link lastOut} y {@link lastFB}, incrementa
+ * {@link stepN} y dispara un re-renderizado completo con animaciones activas.
+ *
+ * La función no realiza ninguna acción si el polinomio no es primitivo, si el
+ * arreglo del registro está vacío, o si una solicitud de paso anterior aún está
+ * en vuelo (la bandera {@link stepping} previene solicitudes concurrentes).
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function stepOnce() {
   if (!primitiveOk || !state.length || stepping) return;
   stepping = true;
@@ -540,6 +661,17 @@ async function stepOnce() {
   }
 }
 
+/**
+ * Alterna la animación entre los estados en reproducción y en pausa.
+ *
+ * Cuando se llama en pausa, establece {@link playing} en {@code true}, actualiza
+ * la etiqueta del botón e inicia un temporizador de intervalo que llama a
+ * {@link stepOnce} al intervalo retornado por {@link getSpd}. El temporizador
+ * se detiene automáticamente cuando el conteo de pasos alcanza el período máximo
+ * (2^n − 1).
+ *
+ * Cuando se llama durante la reproducción, delega inmediatamente a {@link stopPlay}.
+ */
 function togglePlay() {
   if (playing) { stopPlay(); return; }
   playing = true;
@@ -551,6 +683,12 @@ function togglePlay() {
   }, getSpd());
 }
 
+/**
+ * Detiene la animación en ejecución y restablece la etiqueta del botón reproducir/pausar.
+ *
+ * Limpia el temporizador de intervalo iniciado por {@link togglePlay} y
+ * establece {@link playing} en {@code false}.
+ */
 function stopPlay() {
   playing = false;
   clearInterval(interval);
@@ -560,6 +698,18 @@ function stopPlay() {
 
 // ── 5. Render — dibuja registro, keystream y sección de cifrado ──────────────
 
+/**
+ * Redibuja la tira del registro y la pista del keystream a partir del estado global actual.
+ *
+ * Coordina {@link renderRegister} y {@link renderKeystream}, luego actualiza
+ * la pastilla del contador de pasos. Esta función es síncrona y lee únicamente
+ * de las variables de estado globales ({@link state}, {@link keystream},
+ * {@link stepN}, {@link lastOut}, {@link lastFB}).
+ *
+ * @param {boolean} [flash=false] - Cuando es {@code true}, activa las
+ *   animaciones de entrada en el nodo XOR y en la celda de retroalimentación
+ *   recién insertada.
+ */
 // Render síncrono: usa solo variables locales (state, keystream, stepN…)
 function render(flash = false) {
   renderRegister(flash);
@@ -567,6 +717,26 @@ function render(flash = false) {
   $('step-pill').textContent = 'paso ' + stepN;
 }
 
+/**
+ * Redibuja la tira del registro LFSR dentro del elemento {@code #register}.
+ *
+ * Reconstruye todo el subárbol DOM desde cero en cada llamada. Renderiza,
+ * de izquierda a derecha: un nodo XOR, un elemento {@code .cell} por etapa
+ * del registro (x¹ … xⁿ), separadores de flecha entre celdas y un nodo de
+ * salida a la derecha.
+ *
+ * Reglas de asignación de clases CSS para las celdas:
+ * - {@code .is-tap}  — el índice de la celda coincide con una posición de tap activa.
+ * - {@code .is-in}   — celda en el índice 0 que no es tap (acaba de recibir el
+ *   bit de retroalimentación).
+ * - {@code .is-new}  — se aplica junto con {@code .is-in} cuando {@code flash}
+ *   es {@code true}, activando la animación CSS de deslizamiento.
+ *
+ * También actualiza el texto de nota de tap y resalta el nodo XOR al dispararse.
+ *
+ * @param {boolean} flash - Si se deben reproducir animaciones de entrada para
+ *   los cambios de estado introducidos por el paso más reciente.
+ */
 function renderRegister(flash) {
   const el = $('register');
   el.innerHTML = '';
@@ -610,6 +780,15 @@ function renderRegister(flash) {
     : 'sin taps configurados';
 }
 
+/**
+ * Crea un elemento DOM que representa un separador de flecha apuntando hacia la derecha.
+ *
+ * Utilizado por {@link renderRegister} para colocar conectores direccionales
+ * entre el nodo XOR, cada celda del registro y el nodo de salida.
+ *
+ * @returns {HTMLSpanElement} Un {@code <span>} con clase {@code arr-sym}
+ *   que contiene el carácter '→'.
+ */
 function makeArrow() {
   const a = document.createElement('span');
   a.className = 'arr-sym';
@@ -617,6 +796,15 @@ function makeArrow() {
   return a;
 }
 
+/**
+ * Agrega al elemento {@code #ks-track} las fichas de bits del keystream recién generadas.
+ *
+ * Compara el número actual de fichas renderizadas con {@code keystream.length}
+ * y crea únicamente las fichas faltantes, preservando los nodos DOM existentes.
+ * Cada nueva ficha recibe la clase {@code .new} para activar la animación CSS
+ * de aparición, que se elimina tras 250 ms. También actualiza el texto de
+ * anotación del período.
+ */
 function renderKeystream() {
   const track = $('ks-track');
   const prev  = track.children.length;
@@ -634,6 +822,19 @@ function renderKeystream() {
     : '';
 }
 
+/**
+ * Obtiene datos de cifrado de la API y rellena las cuatro filas de visualización XOR.
+ *
+ * Llama a {@link apiEncrypt} con las entradas actuales. En caso de éxito,
+ * delega a {@link fillBits} para renderizar cuatro filas de bits paralelas:
+ * texto plano, keystream, texto cifrado y verificación de ida y vuelta del
+ * descifrado. En caso de error de la API, registra en la consola sin mostrar
+ * el error al usuario. Limpia todas las filas inmediatamente si el polinomio
+ * actual no es primitivo.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 // Render asíncrono: pide los bits del cifrado a la API
 async function renderCipher() {
   const rows = ['row-plain','row-ks','row-cipher','row-decoded'];
@@ -652,6 +853,19 @@ async function renderCipher() {
   }
 }
 
+/**
+ * Renderiza una secuencia de bits como una fila de elementos ficha con estilos.
+ *
+ * Reemplaza todo el contenido del elemento contenedor en cada llamada.
+ * Se renderizan como máximo {@link MAX_BITS} fichas; si {@code bits} es más
+ * largo, se agrega una única ficha '…' para indicar truncamiento.
+ *
+ * @param {string}   id   - ID del elemento contenedor a rellenar.
+ * @param {number[]} bits - Arreglo de valores de bits (cada uno 0 o 1) a renderizar.
+ * @param {string}   cls  - Clase modificadora CSS aplicada a cada ficha de bit.
+ *   Valores esperados: {@code 'plain'}, {@code 'key'}, {@code 'ciph'},
+ *   {@code 'dec'}.
+ */
 function fillBits(id, bits, cls) {
   const el = $(id);
   el.innerHTML = '';
@@ -672,6 +886,25 @@ function fillBits(id, bits, cls) {
 
 // ── 6. UI utils — estado de primitivo, tabla, controles ──────────────────────
 
+/**
+ * Consulta la API sobre la primitividad del polinomio y actualiza el banner de estado.
+ *
+ * Valida que la semilla y los taps no estén vacíos y que ningún tap supere la
+ * longitud del registro antes de emitir la solicitud de red. Con entradas válidas,
+ * llama a {@link apiCheckPrimitive} y aplica el modificador CSS {@code .ok} o
+ * {@code .warn} al elemento del banner para reflejar el resultado.
+ *
+ * Efectos secundarios:
+ * - Establece la bandera global {@link primitiveOk}.
+ * - Habilita/deshabilita los controles de paso mediante {@link setControlsEnabled}.
+ * - Resalta la fila correspondiente de la tabla de referencia mediante
+ *   {@link highlightTableRow}.
+ * - Regresa a estado inactivo cuando las entradas son inválidas o el servidor
+ *   no es accesible.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function updatePrimitiveStatus() {
   const seed    = getSeedArr();
   const tapsArr = getTapsArr();
@@ -708,11 +941,32 @@ async function updatePrimitiveStatus() {
   }
 }
 
+/**
+ * Habilita o deshabilita los botones de paso y reproducir/pausar.
+ *
+ * Llamado por {@link updatePrimitiveStatus} para prevenir interacción cuando
+ * el polinomio de retroalimentación no es primitivo o cuando la configuración
+ * es inválida.
+ *
+ * @param {boolean} enabled - {@code true} para habilitar ambos botones;
+ *   {@code false} para deshabilitarlos.
+ */
 function setControlsEnabled(enabled) {
   $('btn-step').disabled = !enabled;
   $('btn-play').disabled = !enabled;
 }
 
+/**
+ * Resalta la fila de la tabla de referencia que coincide con la configuración de taps dada.
+ *
+ * Compara el atributo {@code data-taps} de cada fila (enteros separados por
+ * comas en orden descendente) con una copia ordenada de forma descendente de
+ * {@code tapsArr}. En cualquier momento se resalta como máximo una fila.
+ * Pasar {@code null} limpia todos los resaltados sin establecer uno nuevo.
+ *
+ * @param {number[]|null} tapsArr - Exponentes de tap a comparar con la tabla,
+ *   o {@code null} para limpiar todos los resaltados de fila activa.
+ */
 function highlightTableRow(tapsArr) {
   document.querySelectorAll('#poly-table tbody tr').forEach(tr => {
     tr.classList.remove('active-row');
