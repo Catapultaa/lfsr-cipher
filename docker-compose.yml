@@ -1,0 +1,8 @@
+services:
+  lfsr-cipher:
+    image: nicoooo25/lfsr-cipher:latest
+    restart: unless-stopped
+    ports:
+      - "28011:8000"
+    environment:
+      TZ: America/Bogota
